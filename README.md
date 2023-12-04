@@ -1,1 +1,1 @@
-# Data Science and Advanced Python Workshop Project
+# Very deep convolutional networks for large-scale image recognition 
