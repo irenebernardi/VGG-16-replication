@@ -8,12 +8,10 @@ import tensorflow
 from tensorflow.keras import layers
 import matplotlib.pyplot as plt
 from matplotlib import image
-import matplotlib.pyplot as plt
 import skimage
 from skimage.io import imread
 from skimage.transform import resize
 import cv2
-import os
 
 # Define constants
 
@@ -67,6 +65,18 @@ for class_dir in class_dirs:
 image = image.imread(subset_dir + "/n02098413/n02098413_720.JPEG")
 # Show image
 plt.imshow(image)
+
+'''plt.figure(figsize=(10,10))
+for i in range(10):
+    plt.subplot(5,5,i+1)
+    plt.xticks([])
+    plt.yticks([])
+    plt.grid(False)
+    plt.imshow(X_train[i])
+    # The CIFAR labels happen to be arrays, 
+    # which is why you need the extra index
+    plt.xlabel(int(labels[i]))
+plt.show()'''
 
 # Import train set as a Dataset object
 # (this object type can be used as input to the model)
@@ -217,10 +227,25 @@ model = keras.models.Sequential([
     layers.Dense(CLASS_NUM, activation="softmax")
 ])
 
-
 # Choose optimiser, loss function and validation metric
+LR_Decay = tf.keras.callbacks.ReduceLROnPlateau(
+    monitor='loss',
+    factor=0.1,
+    patience=2,
+    mode='auto',
+    min_delta=0.0001,
+    min_lr=0.00001
+)
+
+sgd_optimizer = tf.keras.optimizers.experimental.SGD(
+    learning_rate=0.01,
+    momentum=0.90,
+    nesterov=False,
+    weight_decay=0.0005
+)
+
 model.compile(
-    optimizer=keras.optimizers.experimental.SGD(momentum=0.9, weight_decay=0.0005),
+    optimizer = sgd_optimizer,
     loss="categorical_crossentropy",
     metrics=["categorical_accuracy"]
 )
@@ -230,7 +255,8 @@ history = model.fit(
     X_train, y_train,
     epochs=2,
     batch_size=BATCH_SIZE,
-    verbose=True
+    verbose=True,
+    callbacks=[LR_Decay]
 )
 
 # Store training history as a dataframe
