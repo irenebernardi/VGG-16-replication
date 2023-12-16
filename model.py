@@ -1,3 +1,4 @@
+# Import packages
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -14,12 +15,26 @@ from skimage.transform import resize
 import cv2
 import os
 
-# Define number of classes to use (this is a way to subset the data)
+# Define constants
+
+# Set number of classes to use (this is a way to subset the data)
 CLASS_NUM = 3
-
+# Set batch size for mini-batch gradient descent
 BATCH_SIZE = 32
+#BATCH_SIZE = 256
 
-#data preprocessing 
+# Set kernel size for Conv2D layers
+KERNEL_SIZE = 3
+# Set padding mode for Conv2D layers
+PAD_MODE = "same"
+# Set activation function for Conv2D layers
+ACTIVATION = "relu"
+
+# Set pool size for MaxPool2D layers
+POOL_SIZE = 2
+# Set strides for MaxPool2D layers
+POOL_STRIDES = 2
+
 # Store paths to base, train set and subset dirs
 base_dir = "/kaggle/input/imagenet-object-localization-challenge"
 train_dir = base_dir + "/ILSVRC/Data/CLS-LOC/train"
@@ -48,6 +63,31 @@ for class_dir in class_dirs:
     else:
         print(class_dir, "doesn't need copying!")
 
+# Read in image
+image = image.imread(subset_dir + "/n02098413/n02098413_720.JPEG")
+# Show image
+plt.imshow(image)
+
+# Import train set as a Dataset object
+# (this object type can be used as input to the model)
+raw_train_set = keras.utils.image_dataset_from_directory(
+    subset_dir,
+    image_size=(224, 224),
+    batch_size=BATCH_SIZE
+)
+
+# Normalise images to 0-centred distribution
+train_set = raw_train_set.map(lambda x, y: (x - tf.reduce_mean(x), y))
+# Separate images and labels
+images, labels = next(iter(train_set))
+
+# Prepare data for training
+X_train = images
+y_train = pd.get_dummies(labels)
+
+# Check input shape
+input_shape = X_train.shape[1:]
+print(f"Input shape: {input_shape}")
 
 # Read in image
 image = imread(subset_dir + "/n02098413/n02098413_720.JPEG")
@@ -135,95 +175,78 @@ print(cropped_images_s256[0].shape)
 print(cropped_images_s256[231].shape)
 
 #convert images to tensors and one-hot encode labels before compiling model
-images_ds =tf.constant(cropped_images_s256)
-print(images_ds.shape)
-labels_one_hot = pd.get_dummies(labels)
+X_train =tf.constant(cropped_images_s256)
+print(X_train.shape) # used to be image_ds
+y_train = pd.get_dummies(labels)
 #get np array
-labels_one_hot = labels_one_hot.values
+y_train = y_train.values
 
 
-#build model 
+# Design model
+model = keras.models.Sequential([
+    
+    # 1st convolutional block
+    layers.Conv2D(input_shape=input_shape, filters=64, kernel_size=KERNEL_SIZE, padding=PAD_MODE, activation=ACTIVATION),
+    layers.MaxPooling2D(pool_size=POOL_SIZE, strides=POOL_STRIDES),
+    
+    # 2nd convolutional block
+    layers.Conv2D(filters=128, kernel_size=KERNEL_SIZE, padding=PAD_MODE, activation=ACTIVATION),
+    layers.MaxPooling2D(pool_size=POOL_SIZE, strides=POOL_STRIDES),
+    
+    # 3rd convolutional block
+    layers.Conv2D(filters=256, kernel_size=KERNEL_SIZE, padding=PAD_MODE, activation=ACTIVATION),
+    layers.Conv2D(filters=256, kernel_size=KERNEL_SIZE, padding=PAD_MODE, activation=ACTIVATION),
+    layers.MaxPool2D(pool_size=POOL_SIZE, strides=POOL_STRIDES),
+    
+    # 4th convolutional block
+    layers.Conv2D(filters=512, kernel_size=KERNEL_SIZE, padding=PAD_MODE, activation=ACTIVATION),
+    layers.Conv2D(filters=512, kernel_size=KERNEL_SIZE, padding=PAD_MODE, activation=ACTIVATION),
+    layers.MaxPool2D(pool_size=POOL_SIZE, strides=POOL_STRIDES),
+    
+    # 5th convolutional block
+    layers.Conv2D(filters=512, kernel_size=KERNEL_SIZE, padding=PAD_MODE, activation=ACTIVATION),
+    layers.Conv2D(filters=512, kernel_size=KERNEL_SIZE, padding=PAD_MODE, activation=ACTIVATION),
+    layers.MaxPool2D(pool_size=POOL_SIZE, strides=POOL_STRIDES),
+    
+    # Classifier head
+    layers.Flatten(),
+    layers.Dense(4096, activation=ACTIVATION),
+    layers.Dropout(rate=0.5),
+    layers.Dense(4096, activation=ACTIVATION),
+    layers.Dropout(rate=0.5),
+    layers.Dense(CLASS_NUM, activation="softmax")
+])
 
-#create convolutional base
-#refer to table 1 for architecture 
-model = tf.keras.Sequential(name='CNN_11_layer_trial')
 
-#useful comments for understanding layout, once we're all aligned delete: 
-
-#Spatial pooling is carried out by five max-pooling layers, which follow some of the conv. layers (not all the conv. layers are followed
-#by max-pooling). 
-#Max-pooling is performed over a 2 × 2 pixel window, with stride 2.
-#for conv layers: increasing filters by *2 for each conv layer, starting at 64 until 512
-#input shape mandatory in first layer: image shape and 3, stands for RGB
-
-
-model.add(layers.Conv2D(64, (3, 3), strides=(1, 1), padding='same', activation='relu', input_shape=(224, 224, 3))) #1
-model.add(layers.MaxPooling2D((2, 2), strides = 2))
-model.add(layers.Conv2D(128, (3, 3), strides=(1, 1), padding='same', activation='relu')) #2
-model.add(layers.MaxPooling2D((2, 2), strides = 2)) 
-model.add(layers.Conv2D(256, (3, 3), strides=(1, 1), padding='same', activation='relu')) #3
-model.add(layers.Conv2D(256, (3, 3),  strides=(1, 1), padding='same', activation='relu')) #4
-model.add(layers.MaxPooling2D((2, 2), strides = 2))
-model.add(layers.Conv2D(512, (3, 3),  strides=(1, 1), padding='same', activation='relu')) #5
-model.add(layers.Conv2D(512, (3, 3),  strides=(1, 1), padding='same', activation='relu')) #6
-model.add(layers.MaxPooling2D((2, 2), strides = 2)) #final maxpool before fully connected layers 
-model.add(layers.Conv2D(512, (3, 3),  strides=(1, 1), padding='same', activation='relu')) #7
-model.add(layers.Conv2D(512, (3, 3),  strides=(1, 1), padding='same', activation='relu')) #8
-#5th and last maxpool layer: 
-model.add(layers.MaxPooling2D((2, 2), strides = 2))
-#9,10,11 are fully conntected layers
-#9
-model.add(layers.Flatten()) #dense layers expect flat vectors, not tensors
-model.add(layers.Dense(4096)) #4096 units
-layers.Dropout(rate = 0.5)
-#10
-model.add(layers.Dense(4096)) #4096 units
-layers.Dropout(rate = 0.5)
-#11
-#layers.Dense (3, activation = 'softmax')
-model.add(layers.Dense(3)) #1000 units, 1000- way ILSVRC classification; here 3 for subset
-#softmax before output
-model.add(tf.keras.layers.Softmax(axis=-1))   #apply softmax to last dimension of input data
-
-model.summary()
-
-#train model 
-
-from keras.optimizers import SGD
-
-# Define the optimizer separately so we have better hyperparams control 
-sgd = SGD(lr=0.01, momentum=0.9, weight_decay = 0.0005) #TODO: change learning rate and CHECK WEIGHT DECAU
-
-#in 11 layer, paper initializes weights randomly
-#this is redundant as this is the default initialisation method, keeping just for reference in later models w/ > layers 
-weights = [np.random.rand(*w.shape) for w in model.get_weights()]
-model.set_weights(weights)
-
-# Compile the model
-#model.compile(loss='categorical_crossentropy', optimizer=sgd)
-
+# Choose optimiser, loss function and validation metric
 model.compile(
-    optimizer=sgd,  # Optimizer
-    # Loss function to minimize
-    loss='categorical_crossentropy', #multinomial logistic regression
-    # List of metrics to monitor
-    metrics=['categorical_accuracy']
+    optimizer=keras.optimizers.experimental.SGD(momentum=0.9, weight_decay=0.0005),
+    loss="categorical_crossentropy",
+    metrics=["categorical_accuracy"]
 )
 
-
-print("Fit model on training data")
+# Train the model
 history = model.fit(
-    images_ds, 
-    labels_one_hot, #pd.get_dummies(labels)
-    batch_size= 2, 
-    #validation_split=0.15, #we might not need to do this? as this is just a test 
-    epochs= 2 ) #should be 74
+    X_train, y_train,
+    epochs=2,
+    batch_size=BATCH_SIZE,
+    verbose=True
+)
 
+# Store training history as a dataframe
+history_df = pd.DataFrame(history.history)
 
-#The returned history object holds a record of the loss values and metric values during training:
-'''history_df = pd.DataFrame(history.history)
+print(f"Train loss: {history_df['loss'].iloc[-1]:.3f}")
+print(f"Train accuracy: {history_df['categorical_accuracy'].iloc[-1]:.3f}")
 
-history_df.loc[:, "loss"].plot()
-'''
-plt.plot(history.history['loss'])
+# Visualise loss
+history_df.loc[:, "loss"].plot(title="Loss")
 
+# Visualise accuracy
+history_df.loc[:, "categorical_accuracy"].plot(title="Accuracy")
+
+# Define model file
+model_file = f"/kaggle/working/{CLASS_NUM}class_model.keras"
+
+# Save model into file for replication purposes
+model.save(model_file)
