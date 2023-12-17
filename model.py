@@ -11,6 +11,8 @@ from matplotlib import image
 import skimage
 from skimage.io import imread
 from skimage.transform import resize
+from skimage import transform
+from skimage.transform import rescale
 import cv2
 
 # Define constants
@@ -105,16 +107,14 @@ image = imread(subset_dir + "/n02098413/n02098413_720.JPEG")
 plt.imshow(image)
 plt.show()
 
-
 #####RESIZE#####
-
-#NOTE: need to change rescaling 
 
 image_files = [f for f in os.listdir(subset_dir) if f.endswith(".JPEG")]
 
 # Create a list to store resized images
 resized_images = []
-
+#pick S: fixed at 256 or 384
+S = 256
 for image_file in image_files:
     #consutrct full image path
     image_path = os.path.join(subset_dir, image_file)
@@ -122,7 +122,16 @@ for image_file in image_files:
     # Read in the image
     image = imread(image_path)
 
-    #resize the image
+    #NEW: CHECK WITH OTHERS 
+
+    #if S is the smallest side of an isotropically rescaled image, the smallest side of the image should be rescaled to S before cropping
+    min_side = min(image.shape[:2]) #find smallest side, height or width 
+    scale = S/min_side  #this is our scaling factor, by which we multiply the smallest side. Say that smallest side is 128 and rescaling is 256, we do 128 * 2 = 256 (so smallest side is equal to S)
+    #rescale image by S 
+    rescaled_image = rescale(image, scale)
+    #we rescaled and ensured that smallest side of image is length of S,  but still preserving image aspect ratios 
+    #but now images have different ratios, and we resize them all to be equal otherwise we cant crop them and they will not be compatible with convnet layers input 
+    #resize the image (skimage.transform.rescale rescales isotropically)
     resized_image = skimage.transform.resize(image, (256, 256, 3))
 
   
