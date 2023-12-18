@@ -109,7 +109,12 @@ plt.show()
 
 #####RESIZE#####
 
-image_files = [f for f in os.listdir(subset_dir) if f.endswith(".JPEG")]
+image_files = image_files = []
+
+for class_dir in os.listdir(subset_dir):
+    for file in os.listdir(subset_dir + class_dir):
+        if file.endswith(".JPEG"):
+            image_files.append(class_dir + "/" + file)
 
 # Create a list to store resized images
 resized_images = []
@@ -132,7 +137,7 @@ for image_file in image_files:
     #we rescaled and ensured that smallest side of image is length of S,  but still preserving image aspect ratios 
     #but now images have different ratios, and we resize them all to be equal otherwise we cant crop them and they will not be compatible with convnet layers input 
     #resize the image (skimage.transform.rescale rescales isotropically)
-    resized_image = skimage.transform.resize(image, (256, 256, 3))
+    #resized_image = skimage.transform.resize(image, (256, 256, 3))
 
   
     resized_images.append(resized_image)
