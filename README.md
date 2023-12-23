@@ -8,7 +8,7 @@ Using TensorFlow parallel processing and Kaggle's built in TPU to maximize effic
   - achieve 97% training accuracy on a subset of the ImageNet dataset (roughly 150.000 images, batch size of 32, for 50 epochs). TODO: add final parameters we choose to use
   - TODO: insert val accuracy and compare to paper
     
-# Shortcomings and possible future improvements  
+## Shortcomings and possible future improvements  
   - We rewrote our pipeline using generators, which would allow to process the entire ImageNet dataset on a GPU, but we could not achieve this on   TPU. Future work could help fix this so as to process the whole dataset;
   - TODO: possibly insert here what did not work in preprocessing;
   - 
