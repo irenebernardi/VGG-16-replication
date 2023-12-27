@@ -1,10 +1,11 @@
 # Very deep convolutional networks for large-scale image recognition 
 In this project, we aimed to replicate the results of the model described by [Simonyan & Zisserman 2015](https://arxiv.org/abs/1409.1556v6) ("Very Deep Convolutional Networks for Large-Scale Image Recognition"), also known as VGG16, which uses CNN with varying depths for large-scale image recognition. The CNN configuration achieves great accuracy on the ImageNet dataset thanks to the use of sequential 3x3 convolutional filters. The best results in the paper were achieved with 16 and 19 layer models, but several were tested:  VGG11, VGG13, VGG16, and VGG19.
 
-## Project Milestones and progress 
+## Project progress 
 Using TensorFlow parallel processing and Kaggle's built in TPU to maximize efficiency, our team managed to:
   - preprocess the images according to the paper's guidelines;
-  - fully reproduce the architecture of the 11-layer model and transfer it to the subsequent deeper models for weights inheritance (via transfer learning). The architectures of VGG13, VGG16 and VGG19 will be replicated accordingly.
+  - fully reproduce the architecture of the 11-layer model and transfer it to the subsequent deeper models for weights inheritance (via transfer learning). The architectures of VGG13, VGG16 and VGG19 were be replicated accordingly;
+  - create utility scripts to maximize efficiency;
   - achieve 97% accuracy on a subset of the ImageNet dataset (roughly 150.000 images, batch size of 32, for 50 epochs). TODO: add final parameters we choose to use
   - TODO: insert val accuracy and compare to paper
 
