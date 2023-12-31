@@ -8,12 +8,12 @@ import tensorflow
 from tensorflow.keras import layers
 import matplotlib.pyplot as plt
 from matplotlib import image
-import matplotlib.pyplot as plt
 import skimage
 from skimage.io import imread
 from skimage.transform import resize
+from skimage import transform
+from skimage.transform import rescale
 import cv2
-import os
 
 # Define constants
 
@@ -68,6 +68,18 @@ image = image.imread(subset_dir + "/n02098413/n02098413_720.JPEG")
 # Show image
 plt.imshow(image)
 
+'''plt.figure(figsize=(10,10))
+for i in range(10):
+    plt.subplot(5,5,i+1)
+    plt.xticks([])
+    plt.yticks([])
+    plt.grid(False)
+    plt.imshow(X_train[i])
+    # The CIFAR labels happen to be arrays, 
+    # which is why you need the extra index
+    plt.xlabel(int(labels[i]))
+plt.show()'''
+
 # Import train set as a Dataset object
 # (this object type can be used as input to the model)
 raw_train_set = keras.utils.image_dataset_from_directory(
@@ -95,16 +107,19 @@ image = imread(subset_dir + "/n02098413/n02098413_720.JPEG")
 plt.imshow(image)
 plt.show()
 
-
 #####RESIZE#####
 
-#NOTE: need to change rescaling 
+image_files = image_files = []
 
-image_files = [f for f in os.listdir(subset_dir) if f.endswith(".JPEG")]
+for class_dir in os.listdir(subset_dir):
+    for file in os.listdir(subset_dir + class_dir):
+        if file.endswith(".JPEG"):
+            image_files.append(class_dir + "/" + file)
 
 # Create a list to store resized images
 resized_images = []
-
+#pick S: fixed at 256 or 384
+S = 256
 for image_file in image_files:
     #consutrct full image path
     image_path = os.path.join(subset_dir, image_file)
@@ -112,8 +127,17 @@ for image_file in image_files:
     # Read in the image
     image = imread(image_path)
 
-    #resize the image
-    resized_image = skimage.transform.resize(image, (256, 256, 3))
+    #NEW: CHECK WITH OTHERS 
+
+    #if S is the smallest side of an isotropically rescaled image, the smallest side of the image should be rescaled to S before cropping
+    min_side = min(image.shape[:2]) #find smallest side, height or width 
+    scale = S/min_side  #this is our scaling factor, by which we multiply the smallest side. Say that smallest side is 128 and rescaling is 256, we do 128 * 2 = 256 (so smallest side is equal to S)
+    #rescale image by S 
+    rescaled_image = rescale(image, scale)
+    #we rescaled and ensured that smallest side of image is length of S,  but still preserving image aspect ratios 
+    #but now images have different ratios, and we resize them all to be equal otherwise we cant crop them and they will not be compatible with convnet layers input 
+    #resize the image (skimage.transform.rescale rescales isotropically)
+    #resized_image = skimage.transform.resize(image, (256, 256, 3))
 
   
     resized_images.append(resized_image)
@@ -217,10 +241,25 @@ model = keras.models.Sequential([
     layers.Dense(CLASS_NUM, activation="softmax")
 ])
 
-
 # Choose optimiser, loss function and validation metric
+LR_Decay = tf.keras.callbacks.ReduceLROnPlateau(
+    monitor='loss',
+    factor=0.1,
+    patience=2,
+    mode='auto',
+    min_delta=0.0001,
+    min_lr=0.00001
+)
+
+sgd_optimizer = tf.keras.optimizers.experimental.SGD(
+    learning_rate=0.01,
+    momentum=0.90,
+    nesterov=False,
+    weight_decay=0.0005
+)
+
 model.compile(
-    optimizer=keras.optimizers.experimental.SGD(momentum=0.9, weight_decay=0.0005),
+    optimizer = sgd_optimizer,
     loss="categorical_crossentropy",
     metrics=["categorical_accuracy"]
 )
@@ -230,7 +269,8 @@ history = model.fit(
     X_train, y_train,
     epochs=2,
     batch_size=BATCH_SIZE,
-    verbose=True
+    verbose=True,
+    callbacks=[LR_Decay]
 )
 
 # Store training history as a dataframe
