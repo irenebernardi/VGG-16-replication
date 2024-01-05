@@ -10,9 +10,9 @@ Overall, we consider that our models mirror the paper quite well. Using TensorFl
   - achieve training accuracy of nearly 100%.
 
 # Shortcomings and possible future improvements  
-  - Due to time and computational constraints, we were only able to use a train set of size 170000 (11% of total train set), and for only 15 epochs as opposed to . CONTINUA
+  - Due to time and computational constraints, we were only able to use a train set of size 170000 (11% of total train set), and for only 15 epochs as opposed to 74. 
   - We have built a pipeline analogous to the current one using generators, which would allow to process the entire ImageNet dataset on a GPU, but we could not achieve this on TPU due to compatibility issues. Future work could help fix this so as to process the whole dataset;
-  - The S factor in the paper takes two values: 256 and NUMERO. Only the former was utilized because of computational constraints.
+  - The S factor in the paper takes two values: 256 and 384. Only the former was utilized because of computational constraints.
   - random weight initialization from a normal distribution is required by the paper for the 11-layer model, and we achieved it thanks to: `kernel_initializer=initializers.RandomNormal(mean=0.0, stddev=0.1, seed=None)`. However, randomizing weights through this and other approaches consistently led to a nan loss. Thus, we resorted to a weight initialization that draws weights from a Glorot uniform distribution, to avoid the vanishing gradient problem. However, this does not exactly replicate the paper's procedure. Future efforts should focus on debugging the underlying issue in order to replicate the original paper as closely as possible, and preserving random weights. 
   - Unfortunately, whereas training accuracy was extremely high (nearing 100%), accuracy values for the validation set (~50%) show that our models severely overfit. We interpret this difference in performance between the two sets in two possible ways:
     - the model architectures may be too complex for the subset of data we are using;
