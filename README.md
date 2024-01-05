@@ -18,6 +18,7 @@ Overall, we consider that our models mirror the paper quite well. Using TensorFl
     - the model architectures may be too complex for the subset of data we are using;
     - the small amount of data we are using may hint that the two sets are inadvertently biased or         imbalanced; 
     - the validation set was preprocessed improperly with respect to the training set.
+      
     The exact cause can be investigated by using more data and careful debugging of how our               preprocessing affects each set.
 
 
