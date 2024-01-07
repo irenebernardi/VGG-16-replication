@@ -25,7 +25,20 @@ Overall, we consider that our models mirror the paper quite well. Using TensorFl
 
 # How to navigate the repository
 
-TBD: FINAL FILES ORGANIZATION 
+### imagenet-reproducing-convnets.ipynb
+> This is the primary Jupyter notebook for this project. It contains all functionality from this project, including image preprocessing, data loading and caching, the architecture and training for the VGG-11 model as well as all deeper networks (VGG-13, 16, and 19).
+
+### imagenet-reproducing-convnet-16.ipynb
+> This file is an auxillary to the primary notebook, imagenet-reproducing-convnets.ipynb. This notebook contains only the architecture for the VGG-16 model, to allow for separate training from other models. *Note: this notebook requires importing of a VGG-11 model trained in the primary notebook. This can be done by saving a trained model in the pimary notebook, downloading the model to a local device, uploading the saved model to Kaggle as a database, then importing the database containing the model to this notebook.*
+
+### imagenet-reproducing-convnet-19.ipynb
+> Just as with the file above, imagenet-reproducing-convnet-19.ipynb is an auxillary to the primary notebook expressly for training the VGG-19 model. See above for notes on usage.>
+
+### utilities-for-vgg
+> A utility file built to streamline image preprocessing and transfer learning across models.
+
+### random_weights_version.ipynb
+> A version of the VGG-11 model containing random weight initialization with standard deviation of 0.1. As noted above, errors with the training loss were experienced in this version.
 
 
 # Project replicability 
